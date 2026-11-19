@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secondary 8-bit button: same shape as blocker_button_primary, dark fill. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="4dp" android:top="4dp">
+        <shape android:shape="rectangle"><solid android:color="#000000" /></shape>
+    </item>
+    <item android:right="4dp" android:bottom="4dp">
+        <shape android:shape="rectangle"><solid android:color="#000000" /></shape>
+    </item>
+    <item android:left="4dp" android:top="4dp" android:right="8dp" android:bottom="8dp">
+        <shape android:shape="rectangle"><solid android:color="#1b2230" /></shape>
+    </item>
+    <!-- Bevel: light top edge, dark bottom edge. -->
+    <item android:left="4dp" android:top="4dp" android:right="8dp" android:gravity="top" android:height="4dp">
+        <shape android:shape="rectangle"><solid android:color="#59ffffff" /></shape>
+    </item>
+    <item android:left="4dp" android:bottom="8dp" android:right="8dp" android:gravity="bottom" android:height="4dp">
+        <shape android:shape="rectangle"><solid android:color="#59000000" /></shape>
+    </item>
+</layer-list>

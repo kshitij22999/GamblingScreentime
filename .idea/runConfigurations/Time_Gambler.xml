@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Time Gambler (Metro + Android)" type="CompoundRunConfigurationType">
+    <toRun name="Android (build + install + launch)" type="ShConfigurationType" />
+    <toRun name="Metro" type="ShConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

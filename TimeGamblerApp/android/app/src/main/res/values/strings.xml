@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Time Gambler</string>
+    <string name="blocker_service_summary">Blocks apps whose daily time is used up</string>
+    <string name="blocker_service_description">Time Gambler uses this to see which app you open, so it can cover an app the moment its daily time runs out. It only looks at which app is on screen, never at what\'s inside it, and nothing leaves your phone.</string>
+</resources>
