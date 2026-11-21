@@ -89,6 +89,12 @@ def reactNativeArchitectures() {
     return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
 }
 
+def uploadStoreFile = System.getenv("TIME_GAMBLER_UPLOAD_STORE_FILE") ?: project.findProperty("TIME_GAMBLER_UPLOAD_STORE_FILE")
+def uploadStorePassword = System.getenv("TIME_GAMBLER_UPLOAD_STORE_PASSWORD") ?: project.findProperty("TIME_GAMBLER_UPLOAD_STORE_PASSWORD")
+def uploadKeyAlias = System.getenv("TIME_GAMBLER_UPLOAD_KEY_ALIAS") ?: project.findProperty("TIME_GAMBLER_UPLOAD_KEY_ALIAS")
+def uploadKeyPassword = System.getenv("TIME_GAMBLER_UPLOAD_KEY_PASSWORD") ?: project.findProperty("TIME_GAMBLER_UPLOAD_KEY_PASSWORD")
+def releaseSigningConfigured = [uploadStoreFile, uploadStorePassword, uploadKeyAlias, uploadKeyPassword].every { it }
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -118,15 +124,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (releaseSigningConfigured) {
+            release {
+                storeFile file(uploadStoreFile)
+                storePassword uploadStorePassword
+                keyAlias uploadKeyAlias
+                keyPassword uploadKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -146,6 +160,19 @@ android {
             }
 
         }
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def buildingRelease = taskGraph.allTasks.any {
+        it.path == ":app:assembleRelease" || it.path == ":app:bundleRelease"
+    }
+    if (buildingRelease && !releaseSigningConfigured) {
+        throw new GradleException(
+            "Release builds require a private upload key. Set TIME_GAMBLER_UPLOAD_STORE_FILE, " +
+            "TIME_GAMBLER_UPLOAD_STORE_PASSWORD, TIME_GAMBLER_UPLOAD_KEY_ALIAS, and " +
+            "TIME_GAMBLER_UPLOAD_KEY_PASSWORD."
+        )
     }
 }
 

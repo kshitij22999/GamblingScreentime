@@ -1,5 +1,6 @@
 import React, {useCallback, useState} from 'react';
 import {
+  AppState,
   Alert,
   FlatList,
   Linking,
@@ -21,8 +22,6 @@ import {RootStackParamList, Snapshot} from '../types';
 import {fonts, palette} from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
-
-const POLL_INTERVAL_MS = 1000;
 
 export default function Dashboard({navigation}: Props) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -64,10 +63,14 @@ export default function Dashboard({navigation}: Props) {
       };
       nativeBridge.startMonitoring().catch(() => {});
       load();
-      const interval = setInterval(load, POLL_INTERVAL_MS);
+      const subscription = AppState.addEventListener('change', state => {
+        if (state === 'active') {
+          load();
+        }
+      });
       return () => {
         active = false;
-        clearInterval(interval);
+        subscription.remove();
       };
     }, [checkNotifications]),
   );
@@ -116,7 +119,7 @@ export default function Dashboard({navigation}: Props) {
       )}
 
       {snapshot && snapshot.usageAccess && !blockingOn && (
-        <Banner tone="warning" onPress={() => nativeBridge.openBlockerSettings()}>
+        <Banner tone="warning" onPress={() => navigation.navigate('Onboarding')}>
           Blocking is off, so apps stay usable after their time runs out. Tap to switch on the Time
           Gambler app blocker in Accessibility settings.
         </Banner>

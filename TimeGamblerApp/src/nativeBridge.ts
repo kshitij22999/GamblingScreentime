@@ -15,6 +15,7 @@ type TimeGamblerNative = {
   cancelAppLimit(packageName: string): Promise<void>;
   getPermissionStatus(): Promise<PermissionStatus>;
   openUsageAccessSettings(): Promise<void>;
+  acceptAccessibilityDisclosure(): Promise<void>;
   openBlockerSettings(): Promise<void>;
   startMonitoring(): Promise<void>;
   getGambleOdds(packageName: string): Promise<GambleOdds>;
@@ -60,6 +61,7 @@ export const nativeBridge = {
   cancelAppLimit: (packageName: string) => module().cancelAppLimit(packageName),
   getPermissionStatus: () => module().getPermissionStatus(),
   openUsageAccessSettings: () => module().openUsageAccessSettings(),
+  acceptAccessibilityDisclosure: () => module().acceptAccessibilityDisclosure(),
   openBlockerSettings: () => module().openBlockerSettings(),
   startMonitoring: () => module().startMonitoring(),
   getGambleOdds: (packageName: string) => module().getGambleOdds(packageName),

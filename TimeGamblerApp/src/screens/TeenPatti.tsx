@@ -4,7 +4,6 @@ import {
   Animated,
   Pressable,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -26,9 +25,8 @@ import {
   netSeconds,
   newGameId,
   STAKE_STEP_MINUTES,
-  TIER_LABELS,
 } from '../teenPatti';
-import {GambleOdds, RootStackParamList, TeenPattiResult} from '../types';
+import {RootStackParamList, TeenPattiResult} from '../types';
 import {formatClock, formatDuration} from '../time';
 import {fonts, palette} from '../theme';
 
@@ -43,7 +41,6 @@ const newAnims = () => Array.from({length: 3}, () => new Animated.Value(0));
 export default function TeenPatti({navigation, route}: Props) {
   const {app} = route.params;
   const [remainingSeconds, setRemainingSeconds] = useState(app.remainingSeconds);
-  const [odds, setOdds] = useState<GambleOdds | null>(null);
   const [stake, setStake] = useState(() => clampStake(15, app.remainingSeconds));
   const [allIn, setAllIn] = useState(false);
   const [phase, setPhase] = useState<Phase>('betting');
@@ -66,10 +63,6 @@ export default function TeenPatti({navigation, route}: Props) {
           setRemainingSeconds(latest.remainingSeconds);
         }
       })
-      .catch(() => {});
-    nativeBridge
-      .getGambleOdds(app.packageName)
-      .then(setOdds)
       .catch(() => {});
   }, [app.packageName]);
 
@@ -120,7 +113,6 @@ export default function TeenPatti({navigation, route}: Props) {
       const played = await nativeBridge.playTeenPatti(gameId, app.packageName, stake, allIn);
       pendingGameId.current = null;
       setResult(played);
-      setOdds(played.odds);
       animateRound(() => {
         setRemainingSeconds(played.balanceAfterSeconds);
         setAllIn(false);
@@ -164,18 +156,7 @@ export default function TeenPatti({navigation, route}: Props) {
         </PixelFrame>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>TEEN PATTI</Text>
-
-        {odds && (
-          <PixelFrame {...TIER_COLORS[odds.tier]} style={styles.oddsBadge} contentStyle={styles.oddsContent}>
-            <Text style={styles.oddsTitle}>
-              {TIER_LABELS[odds.tier].title} · you win {Math.round(odds.playerWinChance * 100)}%
-            </Text>
-            <Text style={styles.oddsDetail}>{TIER_LABELS[odds.tier].detail}</Text>
-          </PixelFrame>
-        )}
-
+      <View style={styles.content}>
         <PixelFrame shadow color="#0f3b33" borderColor={palette.ink} bevel style={styles.table} contentStyle={styles.tableContent}>
           <HandRow
             label="HOUSE"
@@ -248,7 +229,7 @@ export default function TeenPatti({navigation, route}: Props) {
             </Text>
           </PixelFrame>
         )}
-      </ScrollView>
+      </View>
 
       <View style={styles.footer}>
         <PixelButton
@@ -326,49 +307,37 @@ function Chip(props: {label: string; active: boolean; danger?: boolean; disabled
   );
 }
 
-const TIER_COLORS: Record<GambleOdds['tier'], {color: string; borderColor: string}> = {
-  FAIR: {borderColor: palette.success, color: '#12261f'},
-  LEANING: {borderColor: palette.accent3, color: '#2a2414'},
-  TOUGH: {borderColor: '#ff9a4d', color: '#2c1d12'},
-  HARSH: {borderColor: palette.danger, color: '#2e1517'},
-};
-
 const styles = StyleSheet.create({
   screen: {flex: 1, backgroundColor: palette.background},
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 14,
+    paddingHorizontal: 14,
+    paddingTop: 8,
   },
   back: {color: palette.accent2, fontFamily: fonts.pixel, fontSize: 10},
   dim: {opacity: 0.4},
   balancePill: {alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, maxWidth: 200},
   balanceLabel: {color: palette.muted, fontFamily: fonts.body, fontSize: 17},
   balanceValue: {color: palette.accent3, fontFamily: fonts.pixel, fontSize: 14, lineHeight: 20, marginTop: 2},
-  content: {padding: 18, paddingBottom: 8},
-  title: {color: palette.accent, fontFamily: fonts.pixel, fontSize: 22, lineHeight: 30},
-  oddsBadge: {marginTop: 10},
-  oddsContent: {padding: 10},
-  oddsTitle: {color: palette.text, fontFamily: fonts.pixel, fontSize: 9, lineHeight: 14},
-  oddsDetail: {color: palette.muted, fontFamily: fonts.body, fontSize: 18, marginTop: 4},
-  table: {marginTop: 14},
-  tableContent: {padding: 14},
+  content: {flex: 1, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 4},
+  table: {marginTop: 4},
+  tableContent: {padding: 10},
   handRow: {alignItems: 'center'},
   handHeader: {flexDirection: 'row', alignItems: 'baseline', marginBottom: 8},
   handLabel: {color: '#cfe8df', fontFamily: fonts.pixel, fontSize: 9},
   handName: {color: palette.text, fontFamily: fonts.body, fontSize: 20, marginLeft: 8},
   cards: {flexDirection: 'row', justifyContent: 'center'},
-  banner: {minHeight: 58, alignItems: 'center', justifyContent: 'center', marginVertical: 8},
+  banner: {minHeight: 40, alignItems: 'center', justifyContent: 'center', marginVertical: 4},
   bannerCenter: {alignItems: 'center'},
   bannerIdle: {color: '#cfe8df', fontFamily: fonts.pixel, fontSize: 10},
   bannerText: {fontFamily: fonts.pixel, fontSize: 14, lineHeight: 22, textAlign: 'center'},
   bannerNote: {color: palette.muted, fontFamily: fonts.body, fontSize: 18, marginTop: 2},
-  betPanel: {marginTop: 14},
-  betContent: {padding: 14, alignItems: 'center'},
+  betPanel: {marginTop: 8},
+  betContent: {padding: 10, alignItems: 'center'},
   betLabel: {color: palette.muted, fontFamily: fonts.pixel, fontSize: 9},
-  stakeRow: {flexDirection: 'row', alignItems: 'center', marginTop: 10},
+  stakeRow: {flexDirection: 'row', alignItems: 'center', marginTop: 4},
   stakeValue: {
     color: palette.accent3,
     fontFamily: fonts.pixel,
@@ -377,9 +346,9 @@ const styles = StyleSheet.create({
     minWidth: 150,
     textAlign: 'center',
   },
-  chipRow: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12},
-  chip: {margin: 4},
-  rules: {color: palette.muted, fontFamily: fonts.body, fontSize: 18, marginTop: 10, textAlign: 'center'},
+  chipRow: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 4},
+  chip: {margin: 2},
+  rules: {color: palette.muted, fontFamily: fonts.body, fontSize: 18, marginTop: 4, textAlign: 'center'},
   brokeText: {color: palette.text, fontFamily: fonts.body, fontSize: 21, textAlign: 'center'},
-  footer: {padding: 18, paddingTop: 6},
+  footer: {padding: 14, paddingTop: 4},
 });

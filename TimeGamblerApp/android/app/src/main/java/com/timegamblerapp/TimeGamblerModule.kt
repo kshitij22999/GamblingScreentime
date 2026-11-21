@@ -1,5 +1,6 @@
 package com.timegamblerapp
 
+import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -94,6 +95,11 @@ class TimeGamblerModule(private val reactContext: ReactApplicationContext) : Rea
     status.putBoolean("usageAccess", UsageAccess.isGranted(reactContext))
     status.putBoolean("notifications", NotificationManagerCompat.from(reactContext).areNotificationsEnabled())
     status.putBoolean("blocking", BlockerAccess.isEnabled(reactContext))
+    status.putBoolean(
+      "accessibilityDisclosureAccepted",
+      reactContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+        .getBoolean(KEY_ACCESSIBILITY_DISCLOSURE_ACCEPTED, false),
+    )
     promise.resolve(status)
   }
 
@@ -108,7 +114,23 @@ class TimeGamblerModule(private val reactContext: ReactApplicationContext) : Rea
   }
 
   @ReactMethod
+  fun acceptAccessibilityDisclosure(promise: Promise) {
+    val saved = reactContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+      .edit()
+      .putBoolean(KEY_ACCESSIBILITY_DISCLOSURE_ACCEPTED, true)
+      .commit()
+    if (saved) promise.resolve(null)
+    else promise.reject("E_SAVE_DISCLOSURE_CONSENT", "Could not save your Accessibility Service consent")
+  }
+
+  @ReactMethod
   fun openBlockerSettings(promise: Promise) {
+    val consentAccepted = reactContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+      .getBoolean(KEY_ACCESSIBILITY_DISCLOSURE_ACCEPTED, false)
+    if (!consentAccepted) {
+      promise.reject("E_DISCLOSURE_REQUIRED", "Review and accept the Accessibility Service disclosure first")
+      return
+    }
     try {
       BlockerAccess.openSettings(reactContext)
       promise.resolve(null)
@@ -221,5 +243,10 @@ class TimeGamblerModule(private val reactContext: ReactApplicationContext) : Rea
     map.putInt("remainingSeconds", ((budget.remainingMs + 999L) / 1000L).toInt())
     map.putDouble("lastLimitChangeMs", budget.lastLimitChangeMs.toDouble())
     return map
+  }
+
+  companion object {
+    private const val PREFERENCES_NAME = "time_gambler_privacy"
+    private const val KEY_ACCESSIBILITY_DISCLOSURE_ACCEPTED = "accessibility_disclosure_accepted_v1"
   }
 }

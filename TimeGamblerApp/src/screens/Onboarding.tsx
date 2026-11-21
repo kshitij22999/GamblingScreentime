@@ -1,8 +1,10 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {
+  Alert,
   AppState,
   PermissionsAndroid,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -23,11 +25,19 @@ export default function Onboarding({navigation}: Props) {
     usageAccess: false,
     notifications: false,
     blocking: false,
+    accessibilityDisclosureAccepted: false,
   });
-  const ready = status.usageAccess && status.blocking;
+  const [disclosureAccepted, setDisclosureAccepted] = useState(false);
+  const ready = status.usageAccess && status.blocking && disclosureAccepted;
 
   const refresh = useCallback(() => {
-    nativeBridge.getPermissionStatus().then(setStatus).catch(() => {});
+    nativeBridge
+      .getPermissionStatus()
+      .then(next => {
+        setStatus(next);
+        setDisclosureAccepted(next.accessibilityDisclosureAccepted);
+      })
+      .catch(() => {});
   }, []);
 
   // Usage Access is granted in system Settings, so re-check whenever the user comes back.
@@ -42,6 +52,23 @@ export default function Onboarding({navigation}: Props) {
       await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
     }
     refresh();
+  };
+
+  const acceptDisclosure = async () => {
+    try {
+      await nativeBridge.acceptAccessibilityDisclosure();
+      setDisclosureAccepted(true);
+    } catch (e) {
+      Alert.alert('Could not save consent', String((e as Error)?.message ?? e));
+    }
+  };
+
+  const openBlockerSettings = async () => {
+    try {
+      await nativeBridge.openBlockerSettings();
+    } catch (e) {
+      Alert.alert('Could not open Accessibility settings', String((e as Error)?.message ?? e));
+    }
   };
 
   const finish = async () => {
@@ -73,12 +100,15 @@ export default function Onboarding({navigation}: Props) {
           title="App blocker"
           required
           granted={status.blocking}
-          why="Covers an app the moment its time runs out, before you can use it. It only sees which app is open, never what's inside it."
+          why="Covers a protected app after its daily time runs out."
           how={
             'Tap "Installed apps" (or "Downloaded apps"), choose "Time Gambler" and switch it on. If Android says it\'s a restricted setting, open App info for Time Gambler, tap ⋮ and choose "Allow restricted settings", then try again.'
           }
+          disclosureAccepted={disclosureAccepted}
+          disclosure="Time Gambler uses Android Accessibility Service to detect when you open or switch apps. It reads only the foreground app identity (package and activity name) to apply your time limit and show the blocker when that limit runs out. It does not read screen text or other window content, record keystrokes, or take screenshots. This information is processed on this device and is not sent to a Time Gambler server or shared."
+          onAcceptDisclosure={acceptDisclosure}
           actionLabel="Open Accessibility settings"
-          onAction={() => nativeBridge.openBlockerSettings()}
+          onAction={openBlockerSettings}
         />
 
         <PermissionCard
@@ -109,6 +139,9 @@ function PermissionCard(props: {
   granted: boolean;
   why: string;
   how?: string;
+  disclosure?: string;
+  disclosureAccepted?: boolean;
+  onAcceptDisclosure?: () => void;
   actionLabel: string;
   onAction: () => void;
 }) {
@@ -128,8 +161,26 @@ function PermissionCard(props: {
         </Text>
       </View>
       <Text style={styles.why}>{props.why}</Text>
+      {props.disclosure && (
+        <View style={styles.disclosure}>
+          <Text style={styles.disclosureTitle}>Accessibility Service disclosure</Text>
+          <Text style={styles.disclosureText}>{props.disclosure}</Text>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{checked: !!props.disclosureAccepted}}
+            onPress={props.onAcceptDisclosure}
+            style={styles.consentRow}>
+            <View style={[styles.checkbox, props.disclosureAccepted && styles.checkboxChecked]}>
+              {props.disclosureAccepted && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.consentText}>
+              I understand and agree to this use of Accessibility Service.
+            </Text>
+          </Pressable>
+        </View>
+      )}
       {props.how && !props.granted && <Text style={styles.how}>{props.how}</Text>}
-      {!props.granted && (
+      {!props.granted && (!props.disclosure || props.disclosureAccepted) && (
         <PixelButton
           small
           label={props.actionLabel}
@@ -157,6 +208,22 @@ const styles = StyleSheet.create({
   cardTitle: {color: palette.text, fontFamily: fonts.pixel, fontSize: 11, lineHeight: 16, flex: 1},
   tag: {fontFamily: fonts.pixel, fontSize: 7, marginLeft: 6},
   why: {color: palette.text, fontFamily: fonts.body, fontSize: 20, lineHeight: 21, opacity: 0.9},
+  disclosure: {marginTop: 12, padding: 10, borderWidth: 1, borderColor: palette.accent3},
+  disclosureTitle: {color: palette.accent3, fontFamily: fonts.pixel, fontSize: 8, lineHeight: 14},
+  disclosureText: {color: palette.text, fontFamily: fonts.body, fontSize: 18, lineHeight: 19, marginTop: 6},
+  consentRow: {flexDirection: 'row', alignItems: 'center', marginTop: 10},
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: palette.accent3,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {backgroundColor: palette.accent3},
+  checkmark: {color: palette.background, fontFamily: fonts.pixel, fontSize: 10},
+  consentText: {color: palette.text, fontFamily: fonts.body, fontSize: 18, flex: 1},
   how: {color: palette.accent3, fontFamily: fonts.body, fontSize: 19, lineHeight: 20, marginTop: 8},
   cardButton: {marginTop: 14},
   footer: {padding: 20, paddingTop: 8},

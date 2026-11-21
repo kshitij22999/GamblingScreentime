@@ -20,7 +20,11 @@ export default function App() {
     nativeBridge
       .getPermissionStatus()
       .then(status =>
-        setInitialRoute(status.usageAccess && status.blocking ? 'Dashboard' : 'Onboarding'),
+        setInitialRoute(
+          status.usageAccess && status.blocking && status.accessibilityDisclosureAccepted
+            ? 'Dashboard'
+            : 'Onboarding',
+        ),
       )
       .catch(() => setInitialRoute('Onboarding'));
   }, []);

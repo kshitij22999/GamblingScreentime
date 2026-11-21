@@ -1,40 +1,44 @@
-Time Gambler - Phase 1
+# Time Gambler
 
-This commit implements Phase 1 vertical slice for Time Gambler.
+Time Gambler is a React Native Android app with a Kotlin usage monitor and app blocker. The Android project and its npm package are in `TimeGamblerApp/`.
 
-Files created (high level):
-- package.json, tsconfig.json, app.json, index.js
-- src/: App.tsx, theme.ts, screens (Dashboard, AppSelection, TimerConfig), components (AppCard), services (nativeBridge)
-- android/: minimal Kotlin native module bridge and service stubs
+## Development
 
-Architecture:
-- React Native (TypeScript) UI
-- Kotlin native module (TimeGambler) exposed to RN via NativeModules
-- AsyncStorage used for UI persistence
+Install the JavaScript dependencies and Android SDK, connect an Android device with USB debugging enabled, then run:
 
-Android permissions used (Phase1):
-- None explicitly requested in this skeleton. Usage Access will be requested later when monitoring is implemented.
+```sh
+cd TimeGamblerApp
+npm install
+npm run android
+```
 
-Bridge:
-- TimeGamblerModule.kt exposes getInstalledApps(), startMonitoring(), stopMonitoring().
-- React Native calls NativeModules.TimeGambler and listens to DeviceEventEmitter events.
+For Android unit tests:
 
-Persistence:
-- Protected apps are stored in AsyncStorage under key 'protectedApps'.
-- Enforcement-critical state will be persisted on the Kotlin side (DataStore/SharedPreferences) in later phases.
+```sh
+cd TimeGamblerApp/android
+./gradlew :app:testDebugUnitTest
+```
 
-Limitations / Known issues:
-- Android Gradle project scaffolding not included; to build run 'npx react-native init' or integrate these files into a React Native project.
-- Native module is a stub; getInstalledApps returns a small list. Foreground monitoring service is a stub.
+## Release signing
 
-Build / Run instructions (developer):
-1. Install Node.js, yarn/npm, Android SDK, Java JDK.
-2. Run: npm install
-3. Use 'npx react-native run-android' from project root (after completing Android native scaffolding). See official React Native docs.
+Release APK/AAB tasks require a private upload key. Keep the keystore outside the repository and provide these values through your local environment or CI secret store:
 
-Next steps:
-- Implement real installed-apps discovery using PackageManager in the Kotlin module.
-- Implement Usage Access permission flow and a foreground monitor using UsageStatsManager or AccessibilityService as needed.
-- Persist enforcement state in SharedPreferences or DataStore and implement a robust bridge.
+- `TIME_GAMBLER_UPLOAD_STORE_FILE`
+- `TIME_GAMBLER_UPLOAD_STORE_PASSWORD`
+- `TIME_GAMBLER_UPLOAD_KEY_ALIAS`
+- `TIME_GAMBLER_UPLOAD_KEY_PASSWORD`
 
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Then build the Play upload bundle with:
+
+```sh
+cd TimeGamblerApp/android
+./gradlew :app:bundleRelease
+```
+
+The output is `app/build/outputs/bundle/release/app-release.aab`. Do not commit the keystore or passwords. Configure Play App Signing in Play Console and keep a secure backup of the upload key.
+
+## Google Play readiness
+
+The current Android build targets API 33 and uses an older React Native/Android Gradle toolchain. Update and validate the toolchain and target SDK to the Play requirement before submission; do not only change the target number without testing Android's newer foreground-service and background-start restrictions.
+
+The app's onboarding now shows an in-app Accessibility Service disclosure and requires affirmative consent before opening Accessibility settings. The corresponding Play Console declaration and privacy policy/Data safety answers still need to be completed and reviewed for accuracy before publishing.

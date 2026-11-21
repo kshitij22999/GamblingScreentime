@@ -21,6 +21,7 @@ export type PermissionStatus = {
   notifications: boolean;
   /** The blocker accessibility service is switched on. */
   blocking: boolean;
+  accessibilityDisclosureAccepted: boolean;
 };
 
 /** How hard the house plays, based on last week's use of the app. Decided in Kotlin. */
